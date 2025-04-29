@@ -1,0 +1,61 @@
+﻿@model Shop.Models.Product
+
+@{
+    ViewData["Title"] = "Добавить инструмент";
+}
+
+<div class="container my-5">
+    <div class="card shadow p-4">
+        <h2 class="mb-4 text-center">Добавить товар</h2>
+
+        <form asp-action="AddProduct" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Название</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Описание</label>
+                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Category" class="form-label">Категория</label>
+                <input asp-for="Category" class="form-control" />
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Price" class="form-label">Цена</label>
+                <input asp-for="Price" type="number" class="form-control" />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="StockQuantity" class="form-label">Количество на складе</label>
+                <input asp-for="StockQuantity" type="number" class="form-control" />
+                <span id="customError" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Image" class="form-label">Картинка</label>
+                <input asp-for="Image" type="file" name="imageFile" class="form-control" />
+            </div>
+
+            <input type="hidden" asp-for="AverageRating" value="0" />
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary" style="margin-right: 7px;">Создать</button>
+                <a asp-action="Admin" class="btn btn-secondary">Вернуться назад</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

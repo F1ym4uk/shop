@@ -1,0 +1,229 @@
+﻿@model IEnumerable<Shop.Models.Order>
+
+@{
+    ViewData["Title"] = "Мои заказы";
+}
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-cart-x fs-1 text-muted"></i>
+        <p class="fs-5 text-muted mt-3">У вас пока нет заказов</p>
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary mt-3">Перейти в каталог</a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var order in Model)
+        {
+            <div class="col">
+                <div class="card h-100 border-light shadow-sm hover-shadow transition-all position-relative">
+                    <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background: @GetStatusLineColor(order.Status)"></div>
+
+                    <div class="card-header bg-white border-0 pt-4 pb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0 fw-bold text-dark">Заказ #@order.Id</h5>
+                            <span class="badge rounded-pill @GetStatusBadgeClass(order.Status) border @GetStatusBorderClass(order.Status)">
+                                @order.Status
+                            </span>
+                        </div>
+                        <div class="text-muted small mt-1">
+                            <i class="bi bi-calendar me-1"></i> @order.OrderDate.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    </div>
+
+                    <div class="card-body pt-0 pb-2">
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-2 fw-semibold">@order.Product</h6>
+                                <div class="d-flex text-muted small align-items-center mb-2">
+                                    <span class="me-3"><i class="bi bi-box-seam me-1"></i> @order.Quantity шт.</span>
+                                </div>
+                            </div>
+                            <div class="ms-3 text-end">
+                                <div class="bg-light p-2 rounded text-center mb-2">
+                                    <i class="bi bi-truck @GetStatusIconColor(order.Status)"></i>
+                                </div>
+                                <div class="fs-5 fw-bold text-dark">
+                                    @order.Price.ToString("N2") <span class="fs-6 text-muted">Br</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-top pt-3 mt-2">
+                            <div class="mb-2">
+                                <span class="text-muted small d-block mb-1">Адрес доставки:</span>
+                                <div class="fw-medium text-dark">@order.CustomerAddress</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white border-0 pt-0 pb-3">
+                        @if (order.Status != "Отменён" && order.Status != "Доставлен")
+                        {
+                            <form method="post" action="@Url.Action("CancelOrder", "Account")" class="mt-2">
+                                <input type="hidden" name="orderId" value="@order.Id" />
+                                <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2">
+                                    <i class="bi bi-x-circle me-1"></i> Отменить заказ
+                                </button>
+                            </form>
+                        }
+                        else if (order.Status == "Доставлен")
+                        {
+                            <button class="btn btn-success w-100 rounded-pill py-2" disabled>
+                                <i class="bi bi-check-circle me-1"></i> Заказ получен
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted small py-2">
+                                <i class="bi bi-info-circle me-1"></i> Заказ был отменен
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        switch (status)
+        {
+            case "Новый":
+                return "bg-primary text-white";
+            case "Подтверждён":
+                return "bg-success text-white";
+            case "В обработке":
+                return "bg-info text-dark";
+            case "Доставляется":
+                return "bg-warning text-dark";
+            case "Доставлен":
+                return "bg-teal text-white";
+            case "Завершен":
+                return "bg-dark text-white";
+            case "Отменён":
+                return "bg-secondary text-white";
+            default:
+                return "bg-light text-dark";
+        }
+    }
+
+    string GetStatusBorderClass(string status)
+    {
+        switch (status)
+        {
+            case "Новый":
+                return "border-primary";
+            case "Подтверждён":
+                return "border-success";
+            case "В обработке":
+                return "border-info";
+            case "Доставляется":
+                return "border-warning";
+            case "Доставлен":
+                return "border-teal";
+            case "Завершен":
+                return "border-dark";
+            case "Отменён":
+                return "border-secondary";
+            default:
+                return "border-light";
+        }
+    }
+
+    string GetStatusLineColor(string status)
+    {
+        switch (status)
+        {
+            case "Новый":
+                return "var(--bs-primary)";
+            case "Подтверждён":
+                return "var(--bs-success)";
+            case "В обработке":
+                return "var(--bs-info)";
+            case "Доставляется":
+                return "var(--bs-warning)";
+            case "Доставлен":
+                return "#20c997";
+            case "Завершен":
+                return "var(--bs-dark)";
+            case "Отменён":
+                return "var(--bs-secondary)";
+            default:
+                return "#e9ecef";
+        }
+    }
+
+    string GetStatusIconColor(string status)
+    {
+        switch (status)
+        {
+            case "Новый":
+                return "text-primary";
+            case "Подтверждён":
+                return "text-success";
+            case "В обработке":
+                return "text-info";
+            case "Доставляется":
+                return "text-warning";
+            case "Доставлен":
+                return "text-teal";
+            case "Завершен":
+                return "text-dark";
+            case "Отменён":
+                return "text-secondary";
+            default:
+                return "text-muted";
+        }
+    }
+}
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        font-size: 0.85em;
+    }
+
+    /* Кастомный бирюзовый цвет */
+    .bg-teal {
+        background-color: #20c997 !important;
+    }
+
+    .border-teal {
+        border-color: #20c997 !important;
+    }
+
+    .text-teal {
+        color: #20c997 !important;
+    }
+</style>
