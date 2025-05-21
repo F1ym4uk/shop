@@ -1,0 +1,264 @@
+﻿@model Shop.Models.ProductDetailsViewModel
+@using Microsoft.AspNetCore.Http
+
+<style>
+    .star-rating {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+        .cursor-pointer:hover {
+            transform: scale(1.2);
+        }
+
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    .img-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+</style>
+
+@{
+    ViewData["Title"] = Model.Product.Name;
+    var cart = Context.Session.GetString("Cart") ?? "";
+    var isInCart = !string.IsNullOrEmpty(cart) && cart.Contains($"\"ProductId\":{Model.Product.Id}");
+
+    string GetVotesWord(int count)
+    {
+        if (count == 0) return "голосов";
+        int lastDigit = count % 10;
+        int lastTwoDigits = count % 100;
+
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return "голосов";
+        if (lastDigit == 1) return "голос";
+        if (lastDigit >= 2 && lastDigit <= 4) return "голоса";
+        return "голосов";
+    }
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-md-5 bg-light d-flex align-items-center p-4">
+                        <img src="~/images/Products/@Model.Product.Image" alt="@Model.Product.Name"
+                             class="img-fluid rounded-3 w-100"
+                             style="max-height: 400px; object-fit: contain;">
+                    </div>
+
+                    <div class="col-md-7">
+                        <div class="card-body p-4 d-flex flex-column h-100">
+                            <div class="mb-3">
+                                <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 18px !important;">@Model.Product.Category</span>
+                                <h1 class="card-title fw-bold text-dark mb-2">@Model.Product.Name</h1>
+                                <h3 class="text-success fw-bold mb-3">@Model.Product.Price Руб</h3>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="d-flex align-items-center me-3">
+                                        <div class="display-6 fw-bold text-dark me-2">@Model.Product.AverageRating.ToString("F1")</div>
+                                        <div class="star-rating">
+                                            @{
+                                                double rating = Model.Product.AverageRating;
+                                                for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (rating >= i)
+                                                    {
+                                                        <i class="bi bi-star-fill text-warning"></i>
+                                                    }
+                                                    else if (rating > i - 0.5)
+                                                    {
+                                                        <i class="bi bi-star-half text-warning"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-star text-warning"></i>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small">
+                                        @GetVotesText(Model.Product.TotalVotes)
+                                    </div>
+
+                                </div>
+
+                                @if (User.Identity.IsAuthenticated)
+                                {
+                                    <div class="user-rating-section d-flex align-items-center">
+                                        <p class="text-muted small mb-0 me-2">Ваша оценка:</p>
+                                        <div id="userRating" class="star-rating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (Model.UserRating.HasValue && i <= Model.UserRating.Value)
+                                                {
+                                                    <i class="bi bi-star-fill text-warning cursor-pointer" onclick="rateProduct(@i)"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star text-warning cursor-pointer" onclick="rateProduct(@i)"></i>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-light p-2 small mb-0">
+                                        <i class="bi bi-info-circle"></i> <a href="/Account/Login" class="text-decoration-none">Войдите</a>, чтобы оценить товар
+                                    </div>
+                                }
+                                <div id="ratingResult" class="text-success small mt-2"></div>
+                            </div>
+
+                            <div class="mb-4 flex-grow-1">
+                                <h5 class="fw-semibold mb-2">Описание</h5>
+                                <p class="card-text text-muted">@Model.Product.Description</p>
+                            </div>
+
+                            <div class="mt-auto">
+                                <div class="d-flex gap-3">
+                                    @if (!isInCart)
+                                    {
+                                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-grow-1">
+                                            <input type="hidden" name="productId" value="@Model.Product.Id" />
+                                            <button type="submit" class="btn btn-primary py-2 w-100">
+                                                <i class="bi bi-cart-plus me-2"></i> В корзину
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-success py-2 flex-grow-1" disabled>
+                                            <i class="bi bi-cart-check me-2"></i> В корзине
+                                        </button>
+                                    }
+
+                                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary py-2">
+                                        <i class="bi bi-arrow-left me-2"></i> Каталог
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <form id="tokenForm" style="display:none;">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <script>
+        function rateProduct(rating) {
+            const ratingResult = document.getElementById('ratingResult');
+            ratingResult.innerHTML = '<div class="spinner-border spinner-border-sm text-success me-2"></div> Обработка оценки...';
+
+            fetch('@Url.Action("Rate", "Product")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('#tokenForm input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ productId: @Model.Product.Id, rating: rating })
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Ошибка при отправке оценки');
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateStars(data.averageRating);
+                        document.querySelector('.display-6').textContent = data.averageRating.toFixed(1);
+        document.querySelector('.text-muted.small').innerText = data.totalVotes + ' ' + getVotesWord(data.totalVotes);
+                updateUserRating(rating);
+
+                setTimeout(() => {
+                    ratingResult.innerHTML = '';
+                }, 600);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                ratingResult.innerHTML = '<i class="bi bi-exclamation-circle-fill text-danger me-2"></i> ' + (error.message || "Произошла ошибка");
+            });
+        }
+
+        function updateStars(averageRating) {
+            const stars = document.querySelectorAll('.star-rating:not(#userRating) i');
+            const ratingDisplay = document.querySelector('.display-6');
+
+            ratingDisplay.textContent = averageRating.toFixed(1);
+
+            stars.forEach((star, index) => {
+                const starValue = index + 1;
+                star.className = 'bi ' + (
+                    starValue <= averageRating ? 'bi-star-fill' :
+                    (starValue - 0.5 <= averageRating ? 'bi-star-half' : 'bi-star')
+                ) + ' text-warning';
+            });
+        }
+
+        function updateUserRating(rating) {
+            const userStars = document.querySelectorAll('#userRating i');
+
+            userStars.forEach((star, index) => {
+                const starValue = index + 1;
+                star.className = 'bi ' + (starValue <= rating ? 'bi-star-fill' : 'bi-star') +
+                                 ' text-warning cursor-pointer';
+            });
+        }
+
+        function getVotesWord(count) {
+            if (count === 0) return "голосов";
+            const lastDigit = count % 10;
+            const lastTwoDigits = count % 100;
+
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return "голосов";
+            if (lastDigit === 1) return "голос";
+            if (lastDigit >= 2 && lastDigit <= 4) return "голоса";
+            return "голосов";
+        }
+    </script>
+}
+
+
+@functions {
+    public string GetVotesText(int votes)
+    {
+        if (votes == 0) return "Нет голосов";
+
+        int mod100 = votes % 100;
+        int mod10 = votes % 10;
+
+        if (mod100 >= 11 && mod100 <= 19) return $"{votes} голосов";
+
+        switch (mod10)
+        {
+            case 1: return $"{votes} голос";
+            case 2:
+            case 3:
+            case 4: return $"{votes} голоса";
+            default: return $"{votes} голосов";
+        }
+    }
+}

@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Shop.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="bg-black text-white py-1">
+        <div class="container d-flex justify-content-between align-items-center small">
+            <span><i class="bi bi-envelope"></i> deliverydesserts@gmail.com</span>
+            <span><i class="bi bi-telephone"></i> +375 (29) 519-29-30</span>
+        </div>
+    </div>
+
+    <header class="navbar navbar-expand-lg bg-dark shadow-sm sticky-top">
+        <div class="container-fluid" style="padding: 0 15px;">
+            <a asp-controller="Home" asp-action="Index" class="navbar-brand d-flex align-items-center me-4">
+                <svg width="40px" height="40px" viewBox="0 0 0.8 0.8" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" transform="scale(-1 1)">
+                    <path fill="#fff" d="M0.3 0.15h0.5v0.35H0.3z" />
+                    <path fill="#fff" d="M0.75 0.7a0.1 0.1 0 1 1 -0.2 0A0.1 0.1 0 0 1 0.75 0.7" />
+                    <path fill="#fff" d="M0.65 0.55c0.065 0 0.12 0.04 0.14 0.1h0.01v-0.1z" />
+                    <path fill="#fff" d="M0.25 0.25H0.05L0 0.45v0.2h0.06c0.02 -0.06 0.075 -0.1 0.14 -0.1s0.12 0.04 0.14 0.1h0.17c0.02 -0.06 0.075 -0.1 0.14 -0.1H0.25zM0.2 0.45H0.05l0.04 -0.15H0.2z" />
+                    <path fill="#fff" d="M0.3 0.7a0.1 0.1 0 1 1 -0.2 0A0.1 0.1 0 0 1 0.3 0.7" />
+                </svg>
+                <span class="ms-2 fs-4 fw-bold text-white">Магазин сладкого</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    <li class="nav-item me-3">
+                        <a asp-controller="Cart" asp-action="Index" class="nav-btn cart-btn position-relative">
+                            <i class="bi bi-cart3"></i>
+                            <span class="btn-text">Корзина</span>
+                        </a>
+                    </li>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item me-3">
+                            <a asp-controller="Account" asp-action="MyOrders" class="nav-btn profile-btn">
+                                <i class="bi bi-person"></i>
+                                <span class="btn-text">Кабинет</span>
+                            </a>
+                        </li>
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item me-3">
+                                <a asp-controller="Account" asp-action="Admin" class="nav-btn admin-btn">
+                                    <i class="bi bi-shield-lock"></i>
+                                    <span class="btn-text">Админ</span>
+                                </a>
+                            </li>
+                        }
+
+                        <li class="nav-item">
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                <button type="submit" class="nav-btn logout-btn">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span class="btn-text">Выйти</span>
+                                </button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item me-3">
+                            <a asp-controller="Account" asp-action="Login" class="nav-btn login-btn">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                <span class="btn-text">Войти</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Account" asp-action="Register" class="nav-btn register-btn">
+                                <i class="bi bi-person-plus"></i>
+                                <span class="btn-text">Регистрация</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <br />
+
+    <div class="container">
+        <main role="main" class="pb-3 flex-grow-1">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted bg-dark text-white pt-3" style="">
+        <div class="container d-flex justify-content-between flex-wrap">
+            <div class="mb-3">
+                <h5 class="text-white">Навигация</h5>
+                <ul class="list-unstyled">
+                    <li>
+                        <a asp-controller="Home" asp-action="Index" class="text-white text-muted text-decoration-none">
+                            <i class="bi bi-house-door"></i> Главная
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Cart" asp-action="Index" class="text-white text-muted text-decoration-none">
+                            <i class="bi bi-cart3"></i> Корзина
+                        </a>
+                    </li>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li>
+                            <a asp-controller="Account" asp-action="MyOrders" class="text-white text-muted text-decoration-none">
+                                <i class="bi bi-person"></i> Кабинет
+                            </a>
+                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li>
+                                <a asp-controller="Account" asp-action="Admin" class="text-white text-muted text-decoration-none">
+                                    <i class="bi bi-shield-lock"></i> Админ
+                                </a>
+                            </li>
+                        }
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-link text-white text-muted text-decoration-none p-0 m-0">
+                                    <i class="bi bi-box-arrow-right"></i> Выйти
+                                </button>
+                            </form>
+                        </li>
+
+                    }
+                    else
+                    {
+                        <li>
+                            <a asp-controller="Account" asp-action="Login" class="text-white text-muted text-decoration-none">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Account" asp-action="Register" class="text-white text-muted text-decoration-none">
+                                <i class="bi bi-person-plus"></i> Регистрация
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="text-center mb-3">
+                <h5 class="text-white">Контакты</h5>
+                <p class="mb-1"><i class="bi bi-envelope"></i> deliverydesserts@gmail.com</p>
+                <p><i class="bi bi-telephone"></i> +375 (29) 519-29-30</p>
+            </div>
+
+            <div class="text-start mb-3">
+                <h5 class="text-white">Рабочие часы</h5>
+                <div style="padding-left: 2px;">
+                    <p class="mb-0 fw-bold">Пн: 9:00–21:00</p>
+                    <p class="mb-0 fw-bold">Вт: 9:00–21:00</p>
+                    <p class="mb-0 fw-bold">Ср: 9:00–21:00</p>
+                    <p class="mb-0 fw-bold">Чт: 9:00–21:00</p>
+                    <p class="mb-2 fw-bold">Пт: 9:00–21:00</p>
+                    <p class="mb-0 fw-bold">Сб: 10:00–20:00</p>
+                    <p class="fw-bold">Вс: Выходной</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

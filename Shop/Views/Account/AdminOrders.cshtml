@@ -1,0 +1,146 @@
+﻿@model IEnumerable<Shop.Models.Order>
+
+@{
+    ViewData["Title"] = "Управление заказами";
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Админ-панель: Заказы</h2>
+        <div class="btn-group">
+            <a asp-controller="Account" asp-action="AdminUsers" class="btn btn-outline-dark">Пользователи</a>
+            <a asp-controller="Account" asp-action="OrderReports" class="btn btn-outline-dark">Отчётность</a>
+            <a asp-controller="Account" asp-action="Admin" class="btn btn-outline-dark">Товары</a>
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Покупатель</th>
+                    <th>Email</th>
+                    <th>Телефон</th>
+                    <th>Содержимое заказа</th>
+                    <th>Кол-во</th>
+                    <th>Цена</th>
+                    <th>Адрес</th>
+                    <th>Дата заказа</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    <tr>
+                        <td>@order.Id</td>
+                        <td>@order.User.Login</td>
+                        <td>@order.User.Email</td>
+                        <td>@order.User.PhoneNumber</td>
+                        <td>@order.Product</td>
+                        <td>@order.Quantity</td>
+                        <td>@order.Price руб</td>
+                        <td>@order.CustomerAddress</td>
+                        <td>@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>
+                            <select class="form-select form-select-sm"
+                                    onchange="changeOrderStatus(@order.Id, this.value)"
+                            @(order.Status == "Отменён" ? "disabled" : "")>
+                                @foreach (var status in new[] { "Новый", "Подтверждён", "Доставлен", "Отменён" })
+                                {
+                                    var isCurrent = order.Status == status;
+                                    var isCancelled = order.Status == "Отменён";
+                                    var isChangingToCancelled = status == "Отменён" && !isCancelled;
+
+                                    if (isChangingToCancelled)
+                                    {
+                                        continue; // Не даём выбирать Отменён, если заказ не был отменён
+                                    }
+
+                                    <option value="@status" selected="@(isCurrent ? "selected" : null)">
+                                        @status
+                                    </option>
+                                }
+                            </select>
+                        </td>
+
+                        <td class="text-center">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-info"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="@order.Comment">
+                                    <i class="bi bi-chat-text"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        data-bs-toggle="modal" data-bs-target="#confirmDeleteOrderModal"
+                                        onclick="setDeleteOrderId('@order.Id')">
+                                    Удалить
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmDeleteOrderModal" tabindex="-1" aria-labelledby="confirmDeleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteOrderModalLabel">Подтверждение удаления</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить этот заказ?
+            </div>
+            <div class="modal-footer">
+                <form id="deleteOrderForm" asp-action="DeleteOrder" method="post">
+                    <input type="hidden" id="deleteOrderId" name="id" />
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        function setDeleteOrderId(orderId) {
+            document.getElementById('deleteOrderId').value = orderId;
+        }
+
+        function changeOrderStatus(orderId, newStatus) {
+            fetch('/Account/UpdateOrderStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ id: orderId, status: newStatus })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    alert('Ошибка при обновлении статуса.');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка.');
+            });
+        }
+    </script>
+}
+
+@Html.AntiForgeryToken()

@@ -1,0 +1,116 @@
+﻿@model IEnumerable<Shop.Models.User>
+
+@{
+    ViewData["Title"] = "Управление пользователями";
+}
+
+<div class="container my-4">
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success text-center">@ViewBag.Message</div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Админ-панель: Пользователи</h2>
+        <div class="btn-group">
+            <a asp-controller="Account" asp-action="AdminOrders" class="btn btn-outline-dark">Заказы</a>
+            <a asp-controller="Account" asp-action="Admin" class="btn btn-outline-dark">Товары</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Фильтр пользователей</h5>
+                    <form method="get" asp-action="AdminUsers">
+                        <div class="mb-3">
+                            <input type="text" id="loginInput" name="loginInput" class="form-control"
+                                   placeholder="Логин" value="@ViewBag.SelectedLogin" />
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100">Применить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="table-responsive shadow-sm">
+                <table class="table table-striped table-hover align-middle text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Логин</th>
+                            <th>Телефон</th>
+                            <th>Почта</th>
+                            <th>Админ</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>@user.Id</td>
+                                <td>@Html.Raw(TruncateText(user.Login, 20))</td>
+                                <td>@user.PhoneNumber</td>
+                                <td>@Html.Raw(TruncateText(user.Email, 25))</td>
+                                <td>@(user.IsAdmin ? "Да" : "Нет")</td>
+                                <td class="text-center">
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteUserModal" onclick="setDeleteUserId('@user.Id')">
+                                            Удалить
+                                        </button>
+                                        <form asp-action="EditUser" asp-controller="Account" method="get">
+                                            <input type="hidden" name="id" value="@user.Id" />
+                                            <button type="submit" class="btn btn-sm btn-warning">Изменить</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="confirmDeleteUserModal" tabindex="-1" aria-labelledby="confirmDeleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteUserModalLabel">Подтверждение удаления</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить этого пользователя?
+            </div>
+            <div class="modal-footer">
+                <form id="deleteUserForm" asp-action="DeleteUser" method="post">
+                    <input type="hidden" id="deleteUserId" name="id" />
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string TruncateText(string text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        return text.Length > maxLength ? text.Substring(0, maxLength) + "..." : text;
+    }
+}
+
+@section Scripts {
+    <script>
+        function setDeleteUserId(userId) {
+            document.getElementById('deleteUserId').value = userId;
+        }
+    </script>
+}

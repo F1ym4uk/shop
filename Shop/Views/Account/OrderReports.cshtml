@@ -1,0 +1,243 @@
+﻿@model Shop.Models.OrderReportViewModel
+
+@{
+    ViewData["Title"] = "Отчет по заказам";
+
+    var productCounts = new Dictionary<string, int>();
+
+    foreach (var order in Model.Orders)
+    {
+        var matches = System.Text.RegularExpressions.Regex.Matches(order.Product, @"(.*?)\s*\(x(\d+)\)");
+
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            var productName = match.Groups[1].Value.Trim(' ', ',');
+            var quantity = int.Parse(match.Groups[2].Value);
+
+            if (!string.IsNullOrEmpty(productName))
+            {
+                if (productCounts.ContainsKey(productName))
+                    productCounts[productName] += quantity;
+                else
+                    productCounts[productName] = quantity;
+            }
+        }
+
+
+    }
+
+    var topProducts = productCounts
+        .OrderByDescending(p => p.Value)
+        .Take(3)
+        .ToList();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Отчет по заказам</h2>
+
+        <div class="btn-group">
+            <a asp-controller="Account" asp-action="AdminUsers" class="btn btn-outline-dark">Пользователи</a>
+            <a asp-controller="Account" asp-action="AdminOrders" class="btn btn-outline-dark">Заказы</a>
+            <a asp-controller="Account" asp-action="Admin" class="btn btn-outline-dark">Товары</a>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mb-3">
+        <div class="dropdown me-2">
+            <button class="btn btn-dark dropdown-toggle" type="button" id="periodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                @(Model.SelectedPeriod switch
+                {
+                    "week" => "За неделю",
+                    "month" => "За месяц",
+                    "year" => "За год",
+                    _ => "Период"
+                })
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="periodDropdown">
+                <li><a class="dropdown-item" href="@Url.Action("OrderReports", new { period = "week" })">За неделю</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("OrderReports", new { period = "month" })">За месяц</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("OrderReports", new { period = "year" })">За год</a></li>
+            </ul>
+        </div>
+        <a href="@Url.Action("ExportOrderReports", new { period = Model.SelectedPeriod })" class="btn btn-success">
+            <i class="bi bi-file-excel"></i> Экспорт в Excel
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="card-title">Статистика</h5>
+                    <div class="mb-3">
+                        <span class="text-muted">Период:</span>
+                        <strong>@Model.StartDate.ToShortDateString() - @Model.EndDate.ToShortDateString()</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted">Всего заказов:</span>
+                        <strong>@Model.Orders.Count</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted">Товаров продано:</span>
+                        <strong>@Model.TotalQuantity</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Общая сумма:</span>
+                        <strong>@Model.TotalAmount руб</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted">Топ 3 товара:</span>
+                    <ul class="mb-0">
+                        @foreach (var product in topProducts)
+                        {
+                            <li><strong>@product.Key</strong> — @product.Value шт.</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">График продаж</h5>
+            <canvas id="salesChart" style="height: 300px;"></canvas>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Детали заказов</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Дата</th>
+                            <th>Пользователь</th>
+                            <th>Содержимое заказа</th>
+                            <th>Кол-во</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model.Orders)
+                        {
+                            <tr>
+                                <td>@order.Id</td>
+                                <td>@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>@order.User?.Login</td>
+                                <td>@order.Product</td>
+                                <td>@order.Quantity</td>
+                                <td>@((order.Price)) руб</td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(order.Status)">
+                                        @order.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="/js/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ordersByDate = {};
+
+        @foreach (var order in Model.Orders)
+        {
+            <text>
+                        var dateKey = "@order.OrderDate.ToString("yyyy-MM-dd")";
+                        if (!ordersByDate[dateKey]) {
+                            ordersByDate[dateKey] = 0;
+                        }
+                        ordersByDate[dateKey] += @order.Price.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            </text>
+        }
+
+            let labels = Object.keys(ordersByDate).sort();
+            let data = labels.map(label => ordersByDate[label]);
+
+            labels = labels.map(dateStr => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            });
+
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Продажи (руб)',
+                        data: data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.4)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Дата',
+                                color: '#333',
+                                font: {
+                                    size: 20,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Цена',
+                                color: '#333',
+                                font: {
+                                    size: 20,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Новый" => "bg-primary",
+            "В обработке" => "bg-info",
+            "Доставка" => "bg-warning text-dark",
+            "Завершен" => "bg-success",
+            "Отменён" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

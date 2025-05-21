@@ -1,0 +1,28 @@
+﻿@model Shop.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Вход";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%; border-radius: 10px; margin-top: -200px !important;">
+        <h3 class="text-center mb-4">Вход</h3>
+        <form asp-action="Login" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label for="login_field" class="form-label">Логин</label>
+                <input asp-for="Login" placeholder="Ваш логин" type="text" class="form-control" id="login_field" autocomplete="on" />
+                <span asp-validation-for="Login" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="password_field" class="form-label">Пароль</label>
+                <input asp-for="Password" placeholder="Пароль" type="password" class="form-control" id="password_field" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Войти</button>
+        </form>
+    </div>
+</div>

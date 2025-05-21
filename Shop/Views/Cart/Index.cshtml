@@ -1,0 +1,254 @@
+﻿@using System.Text.Json
+@using Microsoft.AspNetCore.Identity
+@model List<Shop.Models.CartItem>
+
+@{
+    var isAuthenticated = User.Identity.IsAuthenticated;
+    var currentUserLogin = User.Identity?.Name;
+    var totalPrice = Model.Sum(x => x.Product.Price * x.Quantity);
+    var dbContext = Context.RequestServices.GetService(typeof(Shop.Data.ApplicationDbContext)) as Shop.Data.ApplicationDbContext;
+    var user = dbContext?.Users.FirstOrDefault(u => u.Login == currentUserLogin);
+}
+
+<h2 class="mb-4">Корзина</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Ваша корзина пуста.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrEmpty(item.Product.Image))
+                    {
+                        <img src="~/images/Products/@item.Product.Image" class="card-img-top" alt="@item.Product.Name" style="height: 200px; object-fit: cover;">
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@item.Product.Name</h5>
+                        <p class="card-text mb-2"><strong>Цена:</strong> @item.Product.Price руб</p>
+
+                        <div class="d-flex align-items-center mb-2">
+                            <form asp-action="UpdateQuantity" method="post" class="d-inline">
+                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                <button type="submit" name="action" value="decrease" class="btn btn-sm btn-outline-secondary">−</button>
+                            </form>
+                            <span class="mx-3">@item.Quantity</span>
+                            <form asp-action="UpdateQuantity" method="post" class="d-inline">
+                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                <button type="submit" name="action" value="increase" class="btn btn-sm btn-outline-secondary">+</button>
+                            </form>
+                        </div>
+
+                        <p class="card-text mb-3"><strong>Итого:</strong> @(item.Quantity * item.Product.Price) р.</p>
+
+                        <form asp-action="RemoveFromCart" method="post" class="mt-auto">
+                            <input type="hidden" name="productId" value="@item.ProductId" />
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="bi bi-trash"></i> Удалить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <h4 class="mt-5">Общая сумма: @totalPrice руб</h4>
+
+    <div class="mt-4">
+        @if (isAuthenticated)
+        {
+            <button class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#orderModal">
+                <i class="bi bi-cart-check"></i> Оформить заказ
+            </button>
+        }
+        else
+        {
+            <div class="alert alert-warning mt-3">Чтобы оформить заказ, пожалуйста, <a href="/Account/Login">войдите</a> в систему.</div>
+        }
+    </div>
+
+    @if (isAuthenticated)
+    {
+        <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-dark text-white py-3">
+                        <h5 class="modal-title fs-4 fw-bold" id="orderModalLabel">
+                            <i class="bi bi-cart3 me-2"></i>Оформление заказа
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <form id="orderForm" method="post" asp-controller="Order" asp-action="Create">
+                            <input type="hidden" name="cartData" value="@JsonSerializer.Serialize(Model)" />
+                            <input type="hidden" name="totalPrice" value="@totalPrice" />
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold text-dark">Имя пользователя</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg" value="@user?.Login" disabled />
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label class="form-label fw-semibold text-dark">Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="bi bi-envelope"></i>
+                                        </span>
+                                        <input type="email" class="form-control form-control-lg" value="@user?.Email" disabled />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark">Телефон</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="bi bi-phone"></i>
+                                        </span>
+                                        <input type="tel" class="form-control form-control-lg" value="@user?.PhoneNumber" disabled />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold text-dark">Адрес доставки <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-geo-alt"></i>
+                                    </span>
+                                    <input type="text" id="addressInput" name="CustomerAddress" class="form-control"
+                                           placeholder="Выберите адрес на карте" required readonly
+                                           onclick="document.getElementById('mapContainer').style.display='block'; initMap();">
+                                </div>
+                                <div id="mapContainer" style="height: 300px; display: none; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                    <div id="map" style="height: 100%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold text-dark">Комментарий к заказу</label>
+                                <textarea name="Comment" class="form-control" rows="3"
+                                          placeholder="Дополнительные пожелания к заказу"></textarea>
+                            </div>
+
+                            <div class="alert alert-dark py-3 mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold fs-5 text-white">Общая сумма заказа:</span>
+                                    <span class="fw-bold fs-4 text-white">@totalPrice руб</span>
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-dark btn-lg py-3 fw-bold border border-secondary">
+                                    <i class="bi bi-check-circle-fill me-2"></i> Подтвердить заказ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .modal-content {
+                background-color: #f8f9fa;
+            }
+
+            .alert-dark {
+                background-color: #343a40;
+                color: white;
+            }
+
+            .form-control:focus {
+                border-color: #495057;
+                box-shadow: 0 0 0 0.25rem rgba(73, 80, 87, 0.25);
+            }
+
+            .btn-dark:hover {
+                background-color: #23272b;
+                transform: translateY(-1px);
+            }
+        </style>
+    }
+
+
+    @section Scripts {
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+        <script>
+            let map;
+            let marker;
+
+            function initMap() {
+                if (map) return;
+
+                const minskCoords = [53.9045, 27.5615];
+                map = L.map('map').setView(minskCoords, 12);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                map.on('click', function(e) {
+                    const { lat, lng } = e.latlng;
+
+                    if (marker) map.removeLayer(marker);
+
+                    marker = L.marker([lat, lng]).addTo(map)
+                        .bindPopup('Выбранный адрес')
+                        .openPopup();
+
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const addressParts = data.address;
+                            let address = '';
+
+                            if (addressParts.city || addressParts.town || addressParts.village) {
+                                address += (addressParts.city || addressParts.town || addressParts.village) + ' ';
+                            }
+                            if (addressParts.road) {
+                                address += addressParts.road + ' ';
+                            }
+                            if (addressParts.house_number) {
+                                address += addressParts.house_number;
+                            }
+
+                            document.getElementById('addressInput').value = address.trim();
+                            document.getElementById('mapContainer').style.display = 'none';
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при получении адреса:', error);
+                            document.getElementById('addressInput').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        });
+                });
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            if (confirm('Использовать ваше текущее местоположение?')) {
+                                map.setView([position.coords.latitude, position.coords.longitude], 15);
+                            }
+                        },
+                        error => console.error('Ошибка геолокации:', error)
+                    );
+                }
+            }
+        </script>
+    }
+
+
+}
+
+
